@@ -1,5 +1,5 @@
 {
-  "name": "마지막 체크인 | 백야산장 머더 미스터리",
+  "name": "마지막 체크인 · 18인 추리게임",
   "short_name": "마지막 체크인",
   "start_url": "./index.html",
   "scope": "./",
@@ -25,5 +25,5 @@
   ],
   "orientation": "portrait",
   "id": "./",
-  "description": "19인 모바일 크라임씬 / 머더 미스터리 PWA 데모"
+  "description": "BTK 제작 · 18인 크라임씬: 움직이는 조사 지도와 선착순 증거 시연"
 }
