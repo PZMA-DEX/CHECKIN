@@ -533,9 +533,11 @@ render();setInterval(()=>{if(state.stage==='decision'&&(view==='vote'||view==='h
 </script>
 <script>
 /* ══ 실시간 동기화 설정 ══
-   Firebase 콘솔 → 프로젝트 설정 → 내 앱(웹) → firebaseConfig 값을 아래 { } 안에 그대로 붙여 넣으세요.
+   Realtime Database 연결 설정. 현재는 Firebase Authentication을 사용하지 않는 연결 방식입니다.
    비워 두면 기존처럼 각 기기에서 진행 코드를 입력하는 오프라인 방식으로 동작합니다. */
 window.FIREBASE_CONFIG = {
+  projectId: "checkin-322ab",
+  databaseURL: "https://checkin-322ab-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 /* 같은 앱으로 여러 판을 따로 돌릴 때만 바꾸세요 (예: 'game2') */
 window.GAME_ROOM = 'main';
