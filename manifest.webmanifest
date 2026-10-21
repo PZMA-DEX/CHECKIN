@@ -1,5 +1,5 @@
 {
-  "name": "마지막 체크인 · 17인 추리게임",
+  "name": "마지막 초대장 · 16인 + 진행자 추리게임",
   "short_name": "마지막 체크인",
   "start_url": "./index.html",
   "scope": "./",
@@ -25,5 +25,5 @@
   ],
   "orientation": "portrait",
   "id": "./",
-  "description": "BTK 제작 · 17인 크라임씬: 움직이는 조사 지도와 선착순 증거 시연"
+  "description": "BTK 제작 · 16인 크라임씬 (진행자 1명 별도): 실시간 동기화 조사 지도와 선착순 증거"
 }
