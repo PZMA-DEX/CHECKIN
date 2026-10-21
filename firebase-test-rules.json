@@ -1,0 +1,12 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "main": {
+        ".read": "now < 1793113200000",
+        ".write": "now < 1793113200000"
+      }
+    }
+  }
+}
