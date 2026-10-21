@@ -527,12 +527,12 @@ function adminPage(){return originalAdminPageV11().replace(/\s*\/ 수집된 증�
 // Avoid double-tap zoom while retaining text input and other accessibility features.
 window.addEventListener('keydown',e=>{if(view==='map'&&isExploring()&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){const v={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];if(v){e.preventDefault();v11Step(v[0],v[1])}}});
 
+let adminMapMode=false;
 if(state.role>=0&&state.name&&!castNames()[String(state.role)])registerCastName(state.role,state.name);
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 render();setInterval(()=>{if(state.stage==='decision'&&(view==='vote'||view==='home')){let x=document.querySelector('.badge');if(x){x.textContent=timer();if(Date.now()>=state.timerEnd){state.stage='vote';render()}}}},5000);
 
 // Admin avatar reserves the former documentary-director slot without occupying a participant role.
-let adminMapMode=false;
 function enterAdminMap(){
  if(!adminAuthenticated)return alert('관리자 인증이 필요합니다.');
  adminMapMode=true;
