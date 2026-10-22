@@ -571,26 +571,26 @@ window.MAPS = {
     name: '1층',
     rows: [
       '################################rrrrrrrrrrrrrr',
-      '#kkBxkk#xEx.kk#kGkkkk#I.xx.#mKm#rgggggggggggrr',
-      '#......#......#......#.....#...#rgfffgggg1ggrr',
-      '#.dAd.p#..dCd.#.tHt..#.dJd.#m..#rgfffggggggggr',
-      '#..c...#...c..#.c.c..#..c..#...#rgggg::::::ggr',
-      '#......#......#......#.....#...#rggg::gggg:ggr',
-      '#p.....#.....p#x....p#p....#...#rgg::gghhg:ggr',
+      '#kkBx.p#xEx.kp#kGkkxp#I.xk.#mKm#rgggggggggggrr',
+      '#.....x#......#.,c,..#.....#...#rgfffgggg1ggrr',
+      '#.dAd..#..dCd.#.tHt..#.dJd.#m..#rgfffggggggggr',
+      '#.,c,..#...c..#.c,,.x#..c..#...#rgggg::::::ggr',
+      '#x.....#c.....#......#.....#...#rggg::gggg:ggr',
+      '#kk..p.#tc..p.#k...p.#x...p#...#rgg::gghhg:ggr',
       '####D######D######D######D###D##rg::gghhhg:ggr',
-      '#p............................p#r::ggggggg:ggr',
-      '#..............................D::gggggggg:ggr',
+      '#p......x............p.....t...#r::ggggggg:ggr',
+      '#.,,,,,,,,,,,,,,,,,,,,,,,,,,,,.D::gggggggg:ggr',
       '#####D#######DDDD######D########rggggggggg:ggr',
-      '#xN......xp#V......U#kFXF..#ZY.#rgggrggggg:ggr',
-      '#..........#........#......#...#rggggggggg:ggr',
-      '#.tttMttt..#..T.....#......#L###rgggggggg::ggr',
-      '#.c.c.c.c..#,,,,,,,,#,,,,,,,,,,#rgfffgggg:gggr',
-      '#..........#,,s,,s,,#,ss,,,,ss,#rgfffggg::gggr',
-      '##D####D####,,,,,,,,#,,W,,,,,,,D::::::::::gggr',
-      '#..dPd#.oww#wwRw....#,ss,,,,,,,#rggggggggggg2r',
-      '#..c..#....#........#,,,,,,,,,,#rgggrggggggggr',
-      '#....Q#O...#p......S#p,,,,,,,,p#rggggggggggggr',
-      '#p...x#ww..#........#,,,,,,,,,,#rggggrgggggggr',
+      '#.N....xx.p#V.....pU#kFXF.p#ZY.#rgggrggggg:ggr',
+      '#.,,cc,c,,.#........#,,,,,.#...#rggggggggg:ggr',
+      '#.cttMtttc.#..T.....#,c,c,.#L###rgggggggg::ggr',
+      '#.,cc,c,c,.#...,,,,.#,,,,,...kk#rgfffgggg:gggr',
+      '#p........x#...cttc.#,,,,,.....#rgfffggg::gggr',
+      '##D####D####...,ss,.#ctWtc.....D::::::::::gggr',
+      '#k.dPd#.oow#wwR.....#,sss,.....#rggggggggggg2r',
+      '#..c..#...w#........#..........#rgggrggggggggr',
+      '#....Q#O...#k......S#........c.#rggggggggggggr',
+      '#xx..p#ww.x#x..,,p..#p...kk.ctp#rggggrgggggggr',
       '###############DD###############rggggggggggggr',
       'hhhhhhhhhhhhhhh::hhhhhhhhhhhhhhhgggggggggggggr',
       '===============::ggggggggggggggggggggggggggggr',
@@ -599,6 +599,7 @@ window.MAPS = {
       '===============::ggggggggggggggggggggggggggggr',
       'rrrrrrrrrrrrrrr::rrrrrrrrrrrrrrrrrrrrrrrrrrrrr',
     ],
+    rugs: [{x: 2, y: 9, w: 28, h: 1}, {x: 2, y: 12, w: 8, h: 3}, {x: 16, y: 2, w: 3, h: 3}, {x: 2, y: 3, w: 3, h: 2}, {x: 15, y: 14, w: 4, h: 3}, {x: 15, y: 20, w: 2, h: 1}, {x: 21, y: 12, w: 5, h: 6}],
     rooms: [
       { id:'acct',    name:'회계실',         x:1,  y:1,  w:6,  h:6,  floor:'.' },
       { id:'secr',    name:'비서실',         x:8,  y:1,  w:6,  h:6,  floor:'.' },
@@ -652,26 +653,27 @@ window.MAPS = {
     name: '2층',
     rows: [
       '################################',
-      '#kkAkkxkkk#p....p#kkHkkkk.Ik#.Y#',
-      '#.........#......#,,,,,,,,,,#..#',
-      '#.tCt...xB#.s..s.#,,dGd,,,,,#..#',
-      '#..c......#..E...#,,,c,,,,,,L..#',
-      '#.........#......D,,,,J,,,,K#M.#',
-      '#kk.kk.kk.#......#s,,,,,,,,p#..#',
-      '#p........#p....p#s,,t,,,,,,#..#',
+      '#kkAkkx..p#p....k#pkHkk..xIk#.Y#',
+      '#.........#......#.,,c,,...k#..#',
+      '#.dCd....B#.ss,..#.,dGd,.ctk#..#',
+      '#.,c,....x#.,Ec..#.,c,c,....L..#',
+      '#k.......x#......D.,,,J,...K#M.#',
+      '#k.......t#.....p#c,.......p#..#',
+      '#x..p...ss#......#tc.....kkx#..#',
       '#####D#######DD##############L##',
-      '#p............................p#',
-      '#..............................#',
+      '#p,,,,,,t,,,,,,,,,,,,,,,,,,,,,p#',
+      '#.,,,,,,,,,,,,,,,,,,,,,,,,,,,,.#',
       '###L###L###DDDD#####L###L#####L#',
-      '#bb.p#p.bb#p....p#bb.p#p.bb#bb.#',
-      '#bb..#..bb#......#bb..#..bb#bb.#',
-      '#....#....#......#....#....#...#',
-      '#1.2.#.4.5#......#7.8.#.N.O#Q.R#',
-      '#....#....#......#....#....#...#',
-      '#3..x#x..6#p.V..p#9..x#x..P#S..#',
-      '#....#....#......#....#....#...#',
+      '#bt.b#t.bb#..,..p#bb.k#x.tb#bt.#',
+      '#b..b#..bb#..,...#bb.k#...b#b..#',
+      '#.,,.#.,,,#..,...#,,,.#,,,.#,,,#',
+      '#1,2.#.4,5#c.,...#7,8.#,N,O#Q.R#',
+      '#.,,.#c...#t.,...#....#c,,.#...#',
+      '#3..k#d..6#..V.x.#9...#t..P#S..#',
+      '#...k#p...#p.....#p.ct#...p#kk.#',
       '################################',
     ],
+    rugs: [{x: 2, y: 9, w: 28, h: 2}, {x: 19, y: 2, w: 5, h: 4}, {x: 18, y: 6, w: 2, h: 2}, {x: 12, y: 3, w: 3, h: 2}, {x: 2, y: 3, w: 3, h: 2}, {x: 2, y: 14, w: 2, h: 3}, {x: 7, y: 14, w: 3, h: 2}, {x: 18, y: 14, w: 3, h: 2}, {x: 23, y: 14, w: 3, h: 3}, {x: 28, y: 14, w: 3, h: 1}, {x: 13, y: 12, w: 1, h: 5}],
     rooms: [
       { id:'archive', name:'2층 자료실',        x:1,  y:1,  w:9,  h:7, floor:'.' },
       { id:'waiting', name:'서재 앞 대기 공간',  x:11, y:1,  w:6,  h:7, floor:'.' },
@@ -725,17 +727,18 @@ window.MAPS = {
       '#U...#eeAeeeee#mmCmmv..#',
       '#....#........#........#',
       '#....#.dBd....#.dEd....#',
-      '#....#..c....p#..c.....#',
+      '#...x#..c....x#..c....x#',
       '###D######D########D####',
       '#______________________#',
       '#______________________#',
       '########D########D######',
       '#mmmGmmm..H#xxIxx...xxx#',
       '#..........#...........#',
-      '#mmm.mmm...#..J....xx..#',
-      '#..........#...........#',
+      '#mmm.mmm...#..J.......x#',
+      '#..........#x.........x#',
       '########################',
     ],
+    rugs: [],
     rooms: [
       { id:'b1stair', name:'지하 계단실',  x:1,  y:1, w:4,  h:4, floor:'_', phase:2 },
       { id:'utility', name:'지하 설비실',  x:6,  y:1, w:8,  h:4, floor:'_', phase:2 },
@@ -1026,7 +1029,7 @@ const snow = Array.from({length:70},()=>({x:Math.random(),y:Math.random(),s:.3+M
 function tryMove(dir){
   S.dir = dir; const [dx,dy]=DIRV[dir]; const nx=S.x+dx, ny=S.y+dy;
   const ln = linkAt(S.f,nx,ny);
-  if (dx!==0 && (isStairTile(S.f,nx,ny) || isStairTile(S.f,S.x,S.y))){ blockedMsg('계단 난간에 막혀 있다. 계단은 정면에서만 오르내릴 수 있다.'); return; }
+  if (dx!==0 && (isStairTile(S.f,nx,ny) || isStairTile(S.f,S.x,S.y)))return;
   if (ln && ln.phase===2 && S.phase<2){ blockedMsg('계단 입구에 노란 통제선이 쳐져 있다.\n(2차 조사부터 내려갈 수 있다)'); return; }
   if (tile(S.f,nx,ny)==='L' && S.phase<2){ return; }
   if (!walkable(S.f,nx,ny)) return;
@@ -1651,7 +1654,7 @@ const v24Floor=drawFloorChar,v24Furn=drawFurniture,v24Door=drawDoor;
 function artC(g,px,py,fn){g.save();g.beginPath();g.rect(px,py,16,16);g.clip();g.translate(px,py);g.scale(.5,.5);fn((x,y,w,h,c)=>R(g,x,y,w,h,c));g.restore();}
 const RUGS={lobby:['#6b1a20','#7c252a','#4a0f15'],lounge:['#5e171d','#702227','#420c12'],study:['#58141b','#6a1e24','#3c0a10'],
  r201:['#5e1a28','#6e2432','#42101c'],r202:['#4e1c22','#5e262c','#361016'],r203:['#62201c','#722a24','#461410'],r204:['#561a24','#66242e','#3c1018'],r205:['#601c1c','#702626','#441010']};
-function v24Rug(xx,yy){const a=tile(curF,xx,yy);return a===','||(!['.','#','D','L',' ','U','V','Y'].includes(a)&&roomAt(curF,xx,yy)?.floor===',');}
+function v24Rug(xx,yy){return (MAPS[curF].rugs||[]).some(q=>xx>=q.x&&xx<q.x+q.w&&yy>=q.y&&yy<q.y+q.h);}
 function v24Wood(r,x,y){
  // Long boards: the shade and end-joints follow global board segments so planks run across tiles.
  for(let j=0;j<4;j++){const yy=j*8,off=Math.floor(hash(y,j,71)*96);
@@ -1663,17 +1666,9 @@ function v24Wood(r,x,y){
  }
 }
 drawFloorChar=function(g,ch,px,py,x,y,room){
- if(ch==='.'){artC(g,px,py,r=>{v24Wood(r,x,y);
-   // Corridor runner: a red carpet spanning the middle of two-tile halls.
-   if(room&&/^hall/.test(room.id)&&y>=room.y&&y<room.y+room.h&&room.h===2&&x>room.x&&x<room.x+room.w-1){
-    const top=y===room.y,y0=top?12:0,y1=top?32:20,L=x===room.x+1,Rr=x===room.x+room.w-2;
-    r(L?4:0,y0,32-(L?4:0)-(Rr?4:0),y1-y0,'#64181e');
-    for(let i=0;i<32;i+=4)if(!(L&&i<4)&&!(Rr&&i>=28))r(i+1,top?22:4,2,2,(i/4+x)%2?'#7e2a2e':'#4a0e14');
-    if(top){r(L?4:0,12,32-(L?4:0)-(Rr?4:0),2,'#a98445');r(L?4:0,15,32-(L?4:0)-(Rr?4:0),1,'#3a0a0e');}
-    else{r(L?4:0,18,32-(L?4:0)-(Rr?4:0),2,'#a98445');r(L?4:0,16,32-(L?4:0)-(Rr?4:0),1,'#3a0a0e');}
-    if(L){r(4,y0,2,y1-y0,'#a98445');}if(Rr){r(26,y0,2,y1-y0,'#a98445');}
-   }});return;}
- if(ch===','){artC(g,px,py,r=>{
+ // Area rugs come from each floor's rug rectangles; every other plank or carpet tile is plain wood.
+ if((ch==='.'||ch===',')&&!v24Rug(x,y)){artC(g,px,py,r=>v24Wood(r,x,y));return;}
+ if(ch==='.'||ch===','){artC(g,px,py,r=>{
    const c=RUGS[room?.id]||RUGS.lobby,eL=!v24Rug(x-1,y),eR=!v24Rug(x+1,y),eT=!v24Rug(x,y-1),eB=!v24Rug(x,y+1);
    if(eL||eR||eT||eB)v24Wood(r,x,y);
    const l=eL?5:0,t=eT?5:0,rr=eR?27:32,b=eB?27:32;
@@ -1779,7 +1774,20 @@ drawFurniture=function(g,ch,px,py,x,y){
    if(!up){r(1,0,30,4,'#5a3820');r(1,0,30,1,'#9a6a3c');r(4,5,11,7,'#f4ecd8');r(17,5,11,7,'#f4ecd8');r(4,11,11,1,'#c8bca0');r(17,11,11,1,'#c8bca0');}
    const q0=up?0:14;r(lf?0:2,q0,32-(lf?0:2)-(rt?0:2),32-q0-(dn?0:2),'#7a1e26');if(!up){r(lf?0:2,q0,32-(lf?0:2)-(rt?0:2),3,'#efe6d0');r(lf?0:2,q0+3,32-(lf?0:2)-(rt?0:2),1,'#b08a48');}
    for(let i=4;i<30;i+=6)for(let j=(up?3:20);j<30;j+=6)r(i,j,2,2,'#5a121a');if(!lf)r(2,q0,1,32-q0,'#b08a48');if(!rt)r(29,q0,1,32-q0,'#b08a48');if(!dn){r(1,29,30,3,'#5a3820');r(1,29,30,1,'#9a6a3c');}});return;}
- if(ch==='s'||ch==='c'){artC(g,px,py,r=>{r(2,27,30,4,'#10171560');const sofa=ch==='s',l=sofa&&baseAt(x-1,y)==='s',rt=sofa&&baseAt(x+1,y)==='s',i=sofa?1:5;
+ if(ch==='t'&&(baseAt(x,y+1)==='s'||baseAt(x,y-1)==='s')){artC(g,px,py,r=>{const l=baseAt(x-1,y)==='t',rt=baseAt(x+1,y)==='t';
+   // Low coffee table in a seating group: dark wood top, books and a candle instead of a cloth.
+   r(l?0:3,22,32-(l?0:3)-(rt?0:3),5,'#10171560');r(l?0:3,9,32-(l?0:3)-(rt?0:3),13,'#2a170c');r(l?0:4,10,32-(l?0:4)-(rt?0:4),10,'#6a3e20');r(l?0:4,10,32-(l?0:4)-(rt?0:4),1,'#a0683a');
+   for(let i=(l?2:6);i<(rt?32:26);i+=7)r(i,12,5,1,'#5a321a');if(!l)r(4,19,3,5,'#2a170c');if(!rt)r(25,19,3,5,'#2a170c');
+   const v=hash(x,y,190);if(v>.5){r(8,12,9,6,'#7a2a26');r(9,13,7,4,'#c8b088');r(10,12,8,5,'#2c4a5a');}else{r(12,13,6,5,'#d8ceb0');r(14,10,2,4,'#efe4c8');r(14,8,2,2,'#ffd27a');}});return;}
+ if(ch==='t'&&baseAt(x-1,y)!=='t'&&baseAt(x+1,y)!=='t'){artC(g,px,py,r=>{const bed=baseAt(x-1,y)==='b'||baseAt(x+1,y)==='b';
+   // Lone small table: a nightstand with a lamp beside beds, otherwise a side table with a book and teacup.
+   r(5,26,24,4,'#10171560');r(6,8,20,19,'#2a170c');r(7,9,18,17,'#6e4224');r(7,9,18,2,'#a0683a');r(8,16,16,1,'#3a2210');r(14,19,4,2,'#c8a050');r(7,25,3,3,'#2a170c');r(22,25,3,3,'#2a170c');
+   if(bed){r(13,8,6,3,'#8a6a30');r(15,3,2,6,'#8a6a30');r(10,0,12,5,'#f0d8a0');r(11,1,10,3,'#ffeec4');}
+   else{r(9,10,8,5,'#3a5a6a');r(10,10,6,4,'#d8ceb0');r(19,11,4,3,'#e8e2d0');r(20,12,2,1,'#6a4a2a');}});return;}
+ if(ch==='s'||ch==='c'){artC(g,px,py,r0=>{r0(2,27,30,4,'#10171560');const sofa=ch==='s',l=sofa&&baseAt(x-1,y)==='s',rt=sofa&&baseAt(x+1,y)==='s',i=sofa?1:5;
+   // Seats turn toward what they serve: a table or desk, or the fireplace. The drawing is mirrored or transposed to match.
+   const TB='tdwF',up=TB.includes(baseAt(x,y-1))||baseAt(x,y-2)==='F',down=TB.includes(baseAt(x,y+1)),faceR=!sofa&&!up&&!down&&TB.includes(baseAt(x+1,y)),faceL=!sofa&&!up&&!down&&TB.includes(baseAt(x-1,y));
+   const r=up&&!down?(a,b,w,h,c)=>r0(a,32-b-h,w,h,c):faceR?(a,b,w,h,c)=>r0(b,a,h,w,c):faceL?(a,b,w,h,c)=>r0(32-b-h,a,h,w,c):r0;
    r(i,3,32-i*2,25,'#24120a');r(i+1,2,30-i*2,10,'#5a2c18');r(i+2,3,28-i*2,1,'#a8643a');for(let k=i+4;k<30-i;k+=6)r(k,6,1,1,'#2c140a');
    r(i+2,12,28-i*2,12,'#7a3a1e');r(i+3,13,26-i*2,1,'#b06c40');r(15,14,1,9,'#4a2212');
    if(!l){r(i,9,4,16,'#4e2614');r(i,9,4,1,'#a06038');}if(!rt){r(28-i,9,4,16,'#4e2614');r(28-i,9,4,1,'#a06038');}r(i+2,27,3,3,'#1a0e08');r(27-i,27,3,3,'#1a0e08');});return;}
