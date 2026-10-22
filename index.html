@@ -262,7 +262,7 @@ function startPage(){return `<div class="start-screen"><div class="btk-start-bra
 function chooseGender(g){const elG=el('realGender');if(elG)elG.value=g;for(const [id,value] of [['genderMale','남성'],['genderFemale','여성']]){const b=el(id);if(b){b.classList.toggle('chosen',g===value);b.setAttribute('aria-pressed',String(g===value));}}}
 function completeAssignment(id,n,g){
  if(!roleActive(id))return alert('배정할 수 없는 역할입니다.');
- if(id===14&&g!=='여성')return alert('홍예진은 여성 참가자에게만 배정됩니다.');
+ if(!introRoleGenderAllowed(id,g))return alert(DATA.people[id].name+' 배역은 오프닝 영상의 인물에 맞춰 '+INTRO_CAST_GENDER_RULES[id]+' 참가자에게만 배정할 수 있습니다.');
  if(!registerCastName(id,n))return;
  state={...defaultState,name:n,gender:g,role:id,stage:'lobby'};
  registerGender(id,g);selectedPerson=-1;activeConversation=-1;view='home';
@@ -272,7 +272,7 @@ function assign(){
  const n=(el('realName')?.value||'').trim().replace(/\s+/g,' '),g=el('realGender')?.value||'';
  if(!n)return alert('참가자 이름을 입력하세요.');
  if(!['남성','여성'].includes(g))return alert('남성 또는 여성 버튼을 선택하세요.');
- const names=castNames();let free=activePeopleMap((p,i)=>i).filter(i=>!names[String(i)]&&(i!==14||g==='여성'));
+ const names=castNames();let free=activePeopleMap((p,i)=>i).filter(i=>!names[String(i)]&&introRoleGenderAllowed(i,g));
  if(!free.length)return alert('배정 가능한 역할이 없습니다. 관리자에게 초기화를 요청하세요.');
  completeAssignment(free[Math.floor(Math.random()*free.length)],n,g);
 }
@@ -2920,26 +2920,52 @@ window.SYNC_beforeCast = function(room){
     else if(state.pendingReg && !regs[SYNC.device]) state.pendingReg=false;
   }
 };
+// 오프닝 연출과 주요 스토리 설정에 맞춘 성별 고정 배역.
+// 확정 고정: 강태준(남), 최민서(여), 백하린(여), 홍예진(여)
+// 추가 고정: 윤서아(여), 박현우(남), 이재혁(남), 한지훈(남), 김도현(남), 신우진(남)
+const INTRO_CAST_GENDER_RULES = Object.freeze({0:'남성',1:'여성',2:'남성',4:'남성',5:'여성',6:'남성',8:'남성',9:'여성',11:'남성',14:'여성'});
+function introRoleGenderAllowed(i, g){
+  return !INTRO_CAST_GENDER_RULES[i] || INTRO_CAST_GENDER_RULES[i] === g;
+}
 window.adminAssignAll = function(){
   if(!adminAuthenticated||!SYNC.on) return;
   const d=SYNC.data||{}, cast=d.cast||{}, regs=d.regs||{};
-  const assignedDevices=new Set(Object.values(cast).filter(Boolean).map(c=>c.device));
-  let people = Object.entries(regs).filter(([dev])=>!assignedDevices.has(dev)).map(([dev,r])=>({dev,...r}));
-  let free = ACTIVE_ROLE_INDICES.filter(i=>!cast[String(i)]);
-  if(!people.length) return alert('배정을 기다리는 등록자가 없습니다.');
-  const shuffle=a=>{ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
-  shuffle(people); shuffle(free);
-  const PARTNER = 14; const out={}; const warn=[];
-  if(free.includes(PARTNER)){
-    const fem = people.find(p=>p.gender==='여성');
-    if(fem){ out[PARTNER]=fem; people=people.filter(p=>p!==fem); free=free.filter(i=>i!==PARTNER); }
-    else { free=free.filter(i=>i!==PARTNER); warn.push('여성 등록자가 없어 홍예진 역할은 비워 두었습니다.'); }
+  // 이미 배정된 특별 배역이 영상의 성별과 충돌하면 추가 배정을 중단합니다.
+  const mismatch=Object.entries(INTRO_CAST_GENDER_RULES).filter(([i,g])=>cast[i]&&cast[i].device&&cast[i].gender!==g);
+  if(mismatch.length){
+    return alert('기존 배역의 성별이 오프닝 영상과 일치하지 않습니다. 관리자 화면에서 아래 배역을 해제하고 다시 배정해 주세요.\n'+mismatch.map(([i,g])=>DATA.people[+i].name+' → '+g+' 참가자 필요').join('\n'));
   }
-  while(people.length && free.length){ out[free.shift()] = people.shift(); }
-  if(people.length) warn.push(`역할보다 등록자가 ${people.length}명 많아 배정하지 못했습니다: ${people.map(p=>p.name).join(', ')}`);
-  if(!confirm(`${Object.keys(out).length}명에게 역할을 배정할까요?`+(warn.length?'\n\n'+warn.join('\n'):''))) return;
-  const upd={}; Object.entries(out).forEach(([i,p])=>{ upd[i]={name:p.name, gender:p.gender, device:p.dev, at:Date.now()}; });
-  SYNC.db.update(SYNC.R('cast'), upd).then(()=>{ toastTop('역할 배정 완료'); }).catch(e=>alert('배정 실패: '+e.message));
+  const assignedDevices=new Set(Object.values(cast).filter(Boolean).map(c=>c.device));
+  let people=Object.entries(regs).filter(([dev])=>!assignedDevices.has(dev)).map(([dev,r])=>({dev,...r}));
+  let free=ACTIVE_ROLE_INDICES.filter(i=>!cast[String(i)]);
+  if(!people.length) return alert('배정을 기다리는 등록자가 없습니다.');
+  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  shuffle(people); shuffle(free);
+  // 제한 역할의 인원을 가장 먼저 확보하여 무작위 배정 때문에 부족해지는 문제를 막습니다.
+  const required=free.filter(i=>INTRO_CAST_GENDER_RULES[i]);
+  const femaleNeed=required.filter(i=>INTRO_CAST_GENDER_RULES[i]==='여성').length;
+  const maleNeed=required.filter(i=>INTRO_CAST_GENDER_RULES[i]==='남성').length;
+  const femaleHave=people.filter(p=>p.gender==='여성').length;
+  const maleHave=people.filter(p=>p.gender==='남성').length;
+  if(femaleHave<femaleNeed||maleHave<maleNeed){
+    return alert('오프닝 영상과 배역의 성별을 맞추려면 현재 남아 있는 미배정 역할 기준으로 여성 '+femaleNeed+'명, 남성 '+maleNeed+'명이 필요합니다.\n현재 미배정 등록자: 여성 '+femaleHave+'명 / 남성 '+maleHave+'명\n\n강태준(부대표)=남성, 최민서·백하린(최초 발견)=여성, 홍예진=여성.\n조건을 충족하도록 등록 인원을 확인한 뒤 다시 배정해 주세요.');
+  }
+  const out={};
+  for(const id of required){
+    const wanted=INTRO_CAST_GENDER_RULES[id];
+    const pick=people.findIndex(p=>p.gender===wanted);
+    // 앞에서 총 필요 인원을 검증했으므로 반드시 발견됩니다.
+    if(pick<0) return alert('성별 배정 검사에 실패했습니다. 다시 시도해 주세요.');
+    out[id]=people.splice(pick,1)[0];
+  }
+  free=free.filter(i=>!Object.prototype.hasOwnProperty.call(out,i));
+  // 나머지 제한 없는 역할은 기존처럼 무작위로 분배합니다.
+  while(people.length&&free.length) out[free.shift()]=people.shift();
+  const warn=[];
+  if(people.length)warn.push('역할보다 등록자가 '+people.length+'명 많아 배정하지 못했습니다: '+people.map(p=>p.name).join(', '));
+  if(!confirm(Object.keys(out).length+'명에게 역할을 배정할까요?'+(warn.length?'\n\n'+warn.join('\n'):'')))return;
+  const upd={};Object.entries(out).forEach(([i,p])=>{upd[i]={name:p.name,gender:p.gender,device:p.dev,at:Date.now()};});
+  SYNC.db.update(SYNC.R('cast'),upd).then(()=>toastTop('역할 배정 완료 · 고정 성별 반영')).catch(e=>alert('배정 실패: '+e.message));
 };
 window.adminRemoveReg = function(dev){ if(adminAuthenticated&&SYNC.on&&confirm('이 등록을 지울까요?')) SYNC.db.remove(SYNC.R('regs/'+dev)).catch(()=>{}); };
 window.adminUnassign = function(i){ if(adminAuthenticated&&SYNC.on&&confirm(`${DATA.people[i].name} 배정을 해제할까요? 그 참가자 화면은 처음으로 돌아갑니다.`)) SYNC.db.remove(SYNC.R('cast/'+i)).catch(()=>{}); };
@@ -2949,7 +2975,7 @@ function regPanel(){
   const roleOf={}; Object.entries(cast).forEach(([i,c])=>{ if(c&&c.device) roleOf[c.device]=+i; });
   const rows=Object.entries(regs).sort((a,b)=>a[1].at-b[1].at).map(([dev,r])=>`<tr><td>${safe(r.name)}</td><td>${safe(r.gender||'')}</td><td>${roleOf[dev]!=null?safe(DATA.people[roleOf[dev]].name):'<span class="muted">대기</span>'}</td><td>${roleOf[dev]!=null?`<button class="btn outline" style="min-height:28px;padding:2px 8px" onclick="adminUnassign(${roleOf[dev]})">해제</button>`:`<button class="btn outline" style="min-height:28px;padding:2px 8px" onclick="adminRemoveReg('${dev}')">삭제</button>`}</td></tr>`).join('');
   const waiting=Object.keys(regs).filter(dev=>roleOf[dev]==null).length;
-  return panel(`<h3>참가자 등록 · 역할 일괄 배정</h3><p class="muted">참가자는 이름·성별을 등록하고 대기합니다. 목표 인원 <b>${PLAYER_COUNT}명</b>(관리자 제외). 모두 모이면 아래 버튼으로 한 번에 겹치지 않게 배정합니다. 홍예진은 여성 등록자에게만 배정됩니다.</p>
+  return panel(`<h3>참가자 등록 · 역할 일괄 배정</h3><p class="muted">참가자는 이름·성별을 등록하고 대기합니다. 목표 인원 <b>${PLAYER_COUNT}명</b>(관리자 제외). 모두 모이면 아래 버튼으로 한 번에 겹치지 않게 배정합니다. 현재 고정 성별 배역은 남성 6명(강태준·박현우·이재혁·한지훈·김도현·신우진), 여성 4명(윤서아·최민서·백하린·홍예진)이며, 나머지 역할은 남은 참가자 성별 구성에 맞춰 유동 배정됩니다.</p>
    <p>등록 <b>${Object.keys(regs).length}</b>명 · 배정 대기 <b>${waiting}</b>명 · 배정 완료 <b>${Object.keys(cast).length}</b>명</p>
    ${ui('','등록자 역할 일괄 배정','adminAssignAll()','primary')}
    ${rows?`<div class="tg-x" style="margin-top:10px"><table class="tg-grid"><tr><th>이름</th><th>성별</th><th>배역</th><th></th></tr>${rows}</table></div>`:''}`);
@@ -3308,8 +3334,9 @@ function cues(){
     : {t:'22시. 서도윤 대표가 연락을 받지 않는다. 비서 최민서가 산장 매니저 백하린을 찾는다.'};
   return [
     {t:0, kind:'title', text:'청명산장 살인사건', sub:'2026년 11월 7일 토요일 · 청명산장', sfx:'thunder'},
-    {t:8, text:'청명그룹이 소유한 산장, 청명산장. 눈이 그치지 않는 밤. 서로 다른 목적의 사람들이 한 산장에 모이게 되었다. 그 중에는 서로 모르는 사람도 있다. 서도윤은 이 날 중요한 발표가 있다는 얘기와 함께 이들에게 초대장을 나누어주었다.'},
-    {t:20, text:'19시 20분. 청명그룹 서도윤 대표가 늦게 도착해 자리에 앉자 식탁의 대화가 하나씩 끊긴다.'},
+    {t:8, text:'청명그룹이 소유한 산장, 청명산장.'},
+    {t:14, text:'눈이 그치지 않은 밤. 중요한 발표가 있다는 얘기와 함께 초대장을 받은 사람들이 한 산장에 모이게 되었다. 이들은 서로 다른 목적을 가지고 왔을 것이다.'},
+    {t:24, text:'19시 20분. 식당에 모여 서로 얘기를 나누고 있다. 뒤늦게 서도윤 대표가 도착해 자리에 앉자 모두가 그를 바라보았다.'},
     {t:28, text:'20시 정각. 그가 유리잔을 내려놓는다.', sfx:'clink'},
     {t:33, who:'서도윤', text:'십 년 전에 있었던 일을 마무리하기 위해서 불렀습니다. 자정에 진실을 공개하죠.'},
     {t:41, who:'강태준', text:'진실이라고? 그 사건은 이미 마무리된 것 아닌가?'},
@@ -3335,11 +3362,15 @@ function cues(){
     {t:216, kind:'end', text:'지금 당신은 서재 앞에 서 있습니다. 진행자가 「1차 증거 수집」을 시작하면 지도가 열립니다.'}
   ];
 }
-const INTRO_LEN=228;
+const INTRO_LEN=240;
+// 영상 4분(240초), 게임 오프닝 4분. cues()는 v3 나레이션 변경을 반영하며 다른 대사는 v2와 동일합니다.
+// 영상에 원본(이전) 자막이 박혀 있으므로 화면 하단을 마스킹하고 수정 대본을 별도 출력합니다.
+const INTRO_VIDEO_FILE='opening_animation.mp4';
 let introShown=-1, introClosed=false;
 function introStart(){ return state.timerEnd ? state.timerEnd - (V.DUR.intro||4)*60000 : 0; }
 function renderCue(ov,c){
-  const box=ov.querySelector('.v23-intro-stage'); ov.classList.toggle('dark',c.kind==='black'); if(c.kind==='flash'){ ov.classList.add('flash'); setTimeout(()=>ov.classList.remove('flash'),700); }
+  const box=ov.querySelector('.v23-intro-stage'); ov.classList.toggle('dark',c.kind==='black'); ov.classList.toggle('is-rules',c.kind==='rules'||c.kind==='read');
+  if(c.kind==='flash'){ ov.classList.add('flash'); setTimeout(()=>ov.classList.remove('flash'),700); }
   let h='';
   if(c.kind==='title') h=`<div class="v23-title"><small>${esc(c.sub)}</small><h1>${esc(c.text)}</h1><small>MADE BY BTK</small></div>`;
   else if(c.kind==='big') h=`<div class="v23-big">${esc(c.text)}</div>`;
@@ -3352,18 +3383,54 @@ function renderCue(ov,c){
   box.innerHTML=h; box.classList.remove('in'); void box.offsetWidth; box.classList.add('in');
   if(c.sfx && SFX[c.sfx]) SFX[c.sfx]();
 }
+function syncIntroVideo(ov,t){
+  const v=ov.querySelector('#v23OpeningMovie'); if(!v||v.error) return;
+  // 동기화된 게임 타이머를 기준으로 재생 위치를 맞추어, 중간 입장 / 탭 복귀에도 장면이 일치합니다.
+  if(v.readyState>=1 && Number.isFinite(v.duration) && v.duration>0){
+    const target=Math.max(0,Math.min(t,v.duration-0.15));
+    if(Math.abs(v.currentTime-target)>1.5 && !v.seeking) try{ v.currentTime=target; }catch(e){}
+  }
+  if(v.paused&&!v.ended&&!v._introPlayPending&&document.visibilityState==='visible'){
+    v._introPlayPending=true;
+    try{ Promise.resolve(v.play()).then(()=>{ v._introPlayPending=false; const b=ov.querySelector('#v23PlayVideo'); if(b)b.hidden=true; }).catch(()=>{ v._introPlayPending=false; const b=ov.querySelector('#v23PlayVideo'); if(b)b.hidden=false; }); }
+    catch(e){v._introPlayPending=false;const b=ov.querySelector('#v23PlayVideo');if(b)b.hidden=false;}
+  }
+}
+window.v23PlayIntroVideo=function(){
+  const ov=document.getElementById('v23Intro'),v=ov?.querySelector('#v23OpeningMovie'); if(!v)return;
+  const t=(now()-introStart())/1000;
+  if(v.readyState>=1&&Number.isFinite(v.duration)&&v.duration>0)try{v.currentTime=Math.max(0,Math.min(t,v.duration-.15));}catch(e){}
+  v.play().then(()=>{ const b=ov.querySelector('#v23PlayVideo'); if(b)b.hidden=true; }).catch(()=>{});
+};
+window.v23ToggleVideoAudio=function(){
+  const ov=document.getElementById('v23Intro'),v=ov?.querySelector('#v23OpeningMovie'); if(!v)return;
+  v.muted=!v.muted;
+  const b=ov.querySelector('#v23VideoAudio'); if(b) b.textContent=v.muted?'영상 음소거':'영상 소리 켜짐';
+};
 function introTick(){
   const ov0=document.getElementById('v23Intro');
-  if(state.stage!=='intro'){ if(ov0) ov0.remove(); introShown=-1; introClosed=false; return; }
-  if(introClosed) return;
-  const t=(now()-introStart())/1000; if(!introStart()||t<0) return;
+  if(state.stage!=='intro'){
+    if(ov0){const v=ov0.querySelector('#v23OpeningMovie');if(v)v.pause();ov0.remove();}
+    introShown=-1; introClosed=false; return;
+  }
+  if(introClosed)return;
+  const t=(now()-introStart())/1000; if(!introStart()||t<0)return;
   let ov=ov0;
-  if(!ov){ ov=document.createElement('div'); ov.id='v23Intro'; ov.className='v23-intro'; ov.innerHTML=`<div class="v23-snow"></div><div class="v23-intro-stage"></div><div class="v23-intro-bar"><span id="v23IntroT"></span><button onclick="toggleSound()" id="sndBtn2">소리 ♪</button><button onclick="v23CloseIntro()">닫기</button></div>`; document.body.appendChild(ov); introShown=-1; ac(); }
-  const cs=cues(); let idx=-1; cs.forEach((c,k)=>{ if(t>=c.t) idx=k; });
-  if(idx>=0 && idx!==introShown){ const skipSound = introShown===-1 && t-cs[idx].t>3; introShown=idx; const c=cs[idx]; renderCue(ov, skipSound?Object.assign({},c,{sfx:null}):c); }
-  const tt=document.getElementById('v23IntroT'); if(tt) tt.textContent=`오프닝 ${Math.min(100,Math.round(t/INTRO_LEN*100))}%`;
+  if(!ov){
+    ov=document.createElement('div'); ov.id='v23Intro'; ov.className='v23-intro';
+    ov.innerHTML=`<div class="v23-snow"></div><div class="v23-intro-portrait"><video id="v23OpeningMovie" class="v23-intro-video" src="${INTRO_VIDEO_FILE}" autoplay muted playsinline webkit-playsinline preload="auto"></video><div class="v23-intro-video-mask"></div><div class="v23-intro-stage"></div><button type="button" id="v23PlayVideo" class="v23-video-play" onclick="v23PlayIntroVideo()" hidden>▶ 영상 재생</button><div class="v23-video-load" id="v23VideoLoad">영상 불러오는 중…</div></div><div class="v23-intro-bar"><span id="v23IntroT"></span><button onclick="v23ToggleVideoAudio()" id="v23VideoAudio" title="원본 영상의 음성은 수정 전 대본과 다를 수 있습니다">영상 음소거</button><button onclick="toggleSound()" id="sndBtn2">효과음 ♪</button><button onclick="v23CloseIntro()">닫기</button></div>`;
+    document.body.appendChild(ov); introShown=-1; ac();
+    const v=ov.querySelector('#v23OpeningMovie'),load=ov.querySelector('#v23VideoLoad');
+    v.addEventListener('loadeddata',()=>{if(load)load.hidden=true;});
+    v.addEventListener('canplay',()=>{if(load)load.hidden=true;});
+    v.addEventListener('error',()=>{ ov.classList.add('video-unavailable'); if(load){load.hidden=false;load.textContent='영상 파일을 찾을 수 없어 수정 대본 화면으로 재생합니다.';} });
+  }
+  syncIntroVideo(ov,t);
+  const cs=cues(); let idx=-1; cs.forEach((c,k)=>{ if(t>=c.t)idx=k; });
+  if(idx>=0&&idx!==introShown){ const skipSound=introShown===-1&&t-cs[idx].t>3; introShown=idx; const c=cs[idx]; renderCue(ov,skipSound?Object.assign({},c,{sfx:null}):c); }
+  const tt=ov.querySelector('#v23IntroT'); if(tt)tt.textContent=`오프닝 ${Math.min(100,Math.round(t/INTRO_LEN*100))}%`;
 }
-window.v23CloseIntro=function(){ introClosed=true; document.getElementById('v23Intro')?.remove(); };
+window.v23CloseIntro=function(){ introClosed=true;const ov=document.getElementById('v23Intro'); if(ov){const v=ov.querySelector('#v23OpeningMovie');if(v)v.pause();ov.remove();} };
 setInterval(introTick,250);
 
 // ───────── 8. 헤더: 소리 버튼 · 감독 표시 ─────────
@@ -3401,6 +3468,34 @@ css.textContent=`
 .v23-read{text-align:left;background:#111c2bdd;border:1px solid #c8a768;border-radius:14px;padding:18px}.v23-read small{color:var(--gold);letter-spacing:.12em}.v23-read p{font-size:17px;line-height:1.95;word-break:keep-all}.v23-mine{color:#ffd9a0;font-weight:700}
 .v23-intro-bar{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 14px);display:flex;gap:8px;justify-content:center;align-items:center;font-size:12px;color:#9ab1c7}
 .v23-intro-bar button{background:#ffffff14;border:1px solid #ffffff33;color:#dfe7ef;border-radius:20px;padding:6px 12px}
+/* 오프닝 v2 + 2D 영상: 기존 자막(영상에 새겨진 하단 글자)을 덮고 v2 대본을 그 위에 표시 */
+.v23-intro{padding:0;isolation:isolate;background:radial-gradient(ellipse at 50% 30%,#1b2c42,#060b14 70%);overflow:hidden}
+.v23-intro-portrait{position:absolute;inset:0;margin:auto;height:100%;height:100dvh;max-width:100%;width:min(100vw,56.25dvh);background:#070b12;overflow:hidden;box-shadow:0 0 65px #000a}
+.v23-intro-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.v23-intro-video-mask{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,transparent 0%,transparent 59%,#04070b44 64%,#04070bdd 69%,#04070bf7 77%,#04070b 91%)}
+.v23-intro.is-rules .v23-intro-video-mask{background:linear-gradient(to bottom,#04070b99,#04070bef 55%,#04070b 100%)}
+.v23-intro.dark .v23-intro-video-mask{background:#000e}
+.v23-intro .v23-snow{z-index:-1;opacity:.12}
+.v23-intro .v23-intro-stage{position:absolute;left:5%;right:5%;bottom:72px;width:90%;max-width:none;max-height:calc(100% - 98px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;text-align:center;padding:8px 5px;z-index:2}
+.v23-intro .v23-intro-stage.in{animation:v23in .4s ease-out forwards}
+.v23-intro .v23-narr{font-size:clamp(15px,3.4vw,19px);line-height:1.6;text-shadow:0 2px 12px #000}
+.v23-intro .v23-line p{font-size:clamp(17px,4vw,22px);line-height:1.5;text-shadow:0 2px 10px #000}
+.v23-intro .v23-line b{font-size:12px}
+.v23-intro .v23-line.me,.v23-intro .v23-narr.me{background:#101c2af0;padding:11px 12px}
+.v23-intro .v23-read{padding:14px;background:#0c1726f2}
+.v23-intro .v23-read p{font-size:clamp(13px,3.3vw,17px);line-height:1.55}
+.v23-intro .v23-rules{font-size:clamp(12px,3vw,15px);line-height:1.6;padding-left:18px}
+.v23-intro .v23-title h1{font-size:clamp(30px,8vw,48px);margin:10px 0}
+.v23-intro .v23-intro-bar{z-index:4;padding:8px 6px;bottom:0;min-height:53px;background:#04070beb;flex-wrap:wrap;gap:5px}
+.v23-intro .v23-intro-bar button{padding:6px 8px;font-size:11px;cursor:pointer}
+.v23-intro .v23-intro-bar span{font-size:11px}
+.v23-video-play{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%);z-index:5;padding:11px 18px;border-radius:100px;background:#d7b47b;color:#10151f;border:0;font-weight:700;cursor:pointer}
+.v23-video-load{position:absolute;left:10%;right:10%;top:15%;text-align:center;color:#e9cf99;font-size:13px;pointer-events:none;z-index:1;text-shadow:0 2px 6px #000}
+.v23-intro [hidden]{display:none!important}
+.v23-intro.video-unavailable .v23-intro-video{display:none}
+.v23-intro.video-unavailable .v23-intro-video-mask{background:linear-gradient(#070d15e8,#080e17e8)}
+@media (orientation: landscape){.v23-intro .v23-intro-stage{bottom:68px}.v23-intro .v23-narr{font-size:15px}.v23-intro .v23-line p{font-size:17px}}
+
 `;
 document.head.appendChild(css);
 render();
