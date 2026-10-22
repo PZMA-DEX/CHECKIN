@@ -3335,11 +3335,15 @@ function cues(){
     {t:216, kind:'end', text:'지금 당신은 서재 앞에 서 있습니다. 진행자가 「1차 증거 수집」을 시작하면 지도가 열립니다.'}
   ];
 }
-const INTRO_LEN=228;
+const INTRO_LEN=240;
+// 영상 4분(240초), 게임의 오프닝 단계도 4분. 기존 cues()는 v2 수정 대본 그대로 유지합니다.
+// 영상에 원본(이전) 자막이 박혀 있으므로 화면 하단을 마스킹하고 수정 대본을 별도 출력합니다.
+const INTRO_VIDEO_FILE='opening_animation.mp4';
 let introShown=-1, introClosed=false;
 function introStart(){ return state.timerEnd ? state.timerEnd - (V.DUR.intro||4)*60000 : 0; }
 function renderCue(ov,c){
-  const box=ov.querySelector('.v23-intro-stage'); ov.classList.toggle('dark',c.kind==='black'); if(c.kind==='flash'){ ov.classList.add('flash'); setTimeout(()=>ov.classList.remove('flash'),700); }
+  const box=ov.querySelector('.v23-intro-stage'); ov.classList.toggle('dark',c.kind==='black'); ov.classList.toggle('is-rules',c.kind==='rules'||c.kind==='read');
+  if(c.kind==='flash'){ ov.classList.add('flash'); setTimeout(()=>ov.classList.remove('flash'),700); }
   let h='';
   if(c.kind==='title') h=`<div class="v23-title"><small>${esc(c.sub)}</small><h1>${esc(c.text)}</h1><small>MADE BY BTK</small></div>`;
   else if(c.kind==='big') h=`<div class="v23-big">${esc(c.text)}</div>`;
@@ -3352,18 +3356,54 @@ function renderCue(ov,c){
   box.innerHTML=h; box.classList.remove('in'); void box.offsetWidth; box.classList.add('in');
   if(c.sfx && SFX[c.sfx]) SFX[c.sfx]();
 }
+function syncIntroVideo(ov,t){
+  const v=ov.querySelector('#v23OpeningMovie'); if(!v||v.error) return;
+  // 동기화된 게임 타이머를 기준으로 재생 위치를 맞추어, 중간 입장 / 탭 복귀에도 장면이 일치합니다.
+  if(v.readyState>=1 && Number.isFinite(v.duration) && v.duration>0){
+    const target=Math.max(0,Math.min(t,v.duration-0.15));
+    if(Math.abs(v.currentTime-target)>1.5 && !v.seeking) try{ v.currentTime=target; }catch(e){}
+  }
+  if(v.paused&&!v.ended&&!v._introPlayPending&&document.visibilityState==='visible'){
+    v._introPlayPending=true;
+    try{ Promise.resolve(v.play()).then(()=>{ v._introPlayPending=false; const b=ov.querySelector('#v23PlayVideo'); if(b)b.hidden=true; }).catch(()=>{ v._introPlayPending=false; const b=ov.querySelector('#v23PlayVideo'); if(b)b.hidden=false; }); }
+    catch(e){v._introPlayPending=false;const b=ov.querySelector('#v23PlayVideo');if(b)b.hidden=false;}
+  }
+}
+window.v23PlayIntroVideo=function(){
+  const ov=document.getElementById('v23Intro'),v=ov?.querySelector('#v23OpeningMovie'); if(!v)return;
+  const t=(now()-introStart())/1000;
+  if(v.readyState>=1&&Number.isFinite(v.duration)&&v.duration>0)try{v.currentTime=Math.max(0,Math.min(t,v.duration-.15));}catch(e){}
+  v.play().then(()=>{ const b=ov.querySelector('#v23PlayVideo'); if(b)b.hidden=true; }).catch(()=>{});
+};
+window.v23ToggleVideoAudio=function(){
+  const ov=document.getElementById('v23Intro'),v=ov?.querySelector('#v23OpeningMovie'); if(!v)return;
+  v.muted=!v.muted;
+  const b=ov.querySelector('#v23VideoAudio'); if(b) b.textContent=v.muted?'영상 음소거':'영상 소리 켜짐';
+};
 function introTick(){
   const ov0=document.getElementById('v23Intro');
-  if(state.stage!=='intro'){ if(ov0) ov0.remove(); introShown=-1; introClosed=false; return; }
-  if(introClosed) return;
-  const t=(now()-introStart())/1000; if(!introStart()||t<0) return;
+  if(state.stage!=='intro'){
+    if(ov0){const v=ov0.querySelector('#v23OpeningMovie');if(v)v.pause();ov0.remove();}
+    introShown=-1; introClosed=false; return;
+  }
+  if(introClosed)return;
+  const t=(now()-introStart())/1000; if(!introStart()||t<0)return;
   let ov=ov0;
-  if(!ov){ ov=document.createElement('div'); ov.id='v23Intro'; ov.className='v23-intro'; ov.innerHTML=`<div class="v23-snow"></div><div class="v23-intro-stage"></div><div class="v23-intro-bar"><span id="v23IntroT"></span><button onclick="toggleSound()" id="sndBtn2">소리 ♪</button><button onclick="v23CloseIntro()">닫기</button></div>`; document.body.appendChild(ov); introShown=-1; ac(); }
-  const cs=cues(); let idx=-1; cs.forEach((c,k)=>{ if(t>=c.t) idx=k; });
-  if(idx>=0 && idx!==introShown){ const skipSound = introShown===-1 && t-cs[idx].t>3; introShown=idx; const c=cs[idx]; renderCue(ov, skipSound?Object.assign({},c,{sfx:null}):c); }
-  const tt=document.getElementById('v23IntroT'); if(tt) tt.textContent=`오프닝 ${Math.min(100,Math.round(t/INTRO_LEN*100))}%`;
+  if(!ov){
+    ov=document.createElement('div'); ov.id='v23Intro'; ov.className='v23-intro';
+    ov.innerHTML=`<div class="v23-snow"></div><div class="v23-intro-portrait"><video id="v23OpeningMovie" class="v23-intro-video" src="${INTRO_VIDEO_FILE}" autoplay muted playsinline webkit-playsinline preload="auto"></video><div class="v23-intro-video-mask"></div><div class="v23-intro-stage"></div><button type="button" id="v23PlayVideo" class="v23-video-play" onclick="v23PlayIntroVideo()" hidden>▶ 영상 재생</button><div class="v23-video-load" id="v23VideoLoad">영상 불러오는 중…</div></div><div class="v23-intro-bar"><span id="v23IntroT"></span><button onclick="v23ToggleVideoAudio()" id="v23VideoAudio" title="원본 영상의 음성은 수정 전 대본과 다를 수 있습니다">영상 음소거</button><button onclick="toggleSound()" id="sndBtn2">효과음 ♪</button><button onclick="v23CloseIntro()">닫기</button></div>`;
+    document.body.appendChild(ov); introShown=-1; ac();
+    const v=ov.querySelector('#v23OpeningMovie'),load=ov.querySelector('#v23VideoLoad');
+    v.addEventListener('loadeddata',()=>{if(load)load.hidden=true;});
+    v.addEventListener('canplay',()=>{if(load)load.hidden=true;});
+    v.addEventListener('error',()=>{ ov.classList.add('video-unavailable'); if(load){load.hidden=false;load.textContent='영상 파일을 찾을 수 없어 수정 대본 화면으로 재생합니다.';} });
+  }
+  syncIntroVideo(ov,t);
+  const cs=cues(); let idx=-1; cs.forEach((c,k)=>{ if(t>=c.t)idx=k; });
+  if(idx>=0&&idx!==introShown){ const skipSound=introShown===-1&&t-cs[idx].t>3; introShown=idx; const c=cs[idx]; renderCue(ov,skipSound?Object.assign({},c,{sfx:null}):c); }
+  const tt=ov.querySelector('#v23IntroT'); if(tt)tt.textContent=`오프닝 ${Math.min(100,Math.round(t/INTRO_LEN*100))}%`;
 }
-window.v23CloseIntro=function(){ introClosed=true; document.getElementById('v23Intro')?.remove(); };
+window.v23CloseIntro=function(){ introClosed=true;const ov=document.getElementById('v23Intro'); if(ov){const v=ov.querySelector('#v23OpeningMovie');if(v)v.pause();ov.remove();} };
 setInterval(introTick,250);
 
 // ───────── 8. 헤더: 소리 버튼 · 감독 표시 ─────────
@@ -3401,6 +3441,34 @@ css.textContent=`
 .v23-read{text-align:left;background:#111c2bdd;border:1px solid #c8a768;border-radius:14px;padding:18px}.v23-read small{color:var(--gold);letter-spacing:.12em}.v23-read p{font-size:17px;line-height:1.95;word-break:keep-all}.v23-mine{color:#ffd9a0;font-weight:700}
 .v23-intro-bar{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 14px);display:flex;gap:8px;justify-content:center;align-items:center;font-size:12px;color:#9ab1c7}
 .v23-intro-bar button{background:#ffffff14;border:1px solid #ffffff33;color:#dfe7ef;border-radius:20px;padding:6px 12px}
+/* 오프닝 v2 + 2D 영상: 기존 자막(영상에 새겨진 하단 글자)을 덮고 v2 대본을 그 위에 표시 */
+.v23-intro{padding:0;isolation:isolate;background:radial-gradient(ellipse at 50% 30%,#1b2c42,#060b14 70%);overflow:hidden}
+.v23-intro-portrait{position:absolute;inset:0;margin:auto;height:100%;height:100dvh;max-width:100%;width:min(100vw,56.25dvh);background:#070b12;overflow:hidden;box-shadow:0 0 65px #000a}
+.v23-intro-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.v23-intro-video-mask{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,transparent 0%,transparent 59%,#04070b44 64%,#04070bdd 69%,#04070bf7 77%,#04070b 91%)}
+.v23-intro.is-rules .v23-intro-video-mask{background:linear-gradient(to bottom,#04070b99,#04070bef 55%,#04070b 100%)}
+.v23-intro.dark .v23-intro-video-mask{background:#000e}
+.v23-intro .v23-snow{z-index:-1;opacity:.12}
+.v23-intro .v23-intro-stage{position:absolute;left:5%;right:5%;bottom:72px;width:90%;max-width:none;max-height:calc(100% - 98px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;text-align:center;padding:8px 5px;z-index:2}
+.v23-intro .v23-intro-stage.in{animation:v23in .4s ease-out forwards}
+.v23-intro .v23-narr{font-size:clamp(15px,3.4vw,19px);line-height:1.6;text-shadow:0 2px 12px #000}
+.v23-intro .v23-line p{font-size:clamp(17px,4vw,22px);line-height:1.5;text-shadow:0 2px 10px #000}
+.v23-intro .v23-line b{font-size:12px}
+.v23-intro .v23-line.me,.v23-intro .v23-narr.me{background:#101c2af0;padding:11px 12px}
+.v23-intro .v23-read{padding:14px;background:#0c1726f2}
+.v23-intro .v23-read p{font-size:clamp(13px,3.3vw,17px);line-height:1.55}
+.v23-intro .v23-rules{font-size:clamp(12px,3vw,15px);line-height:1.6;padding-left:18px}
+.v23-intro .v23-title h1{font-size:clamp(30px,8vw,48px);margin:10px 0}
+.v23-intro .v23-intro-bar{z-index:4;padding:8px 6px;bottom:0;min-height:53px;background:#04070beb;flex-wrap:wrap;gap:5px}
+.v23-intro .v23-intro-bar button{padding:6px 8px;font-size:11px;cursor:pointer}
+.v23-intro .v23-intro-bar span{font-size:11px}
+.v23-video-play{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%);z-index:5;padding:11px 18px;border-radius:100px;background:#d7b47b;color:#10151f;border:0;font-weight:700;cursor:pointer}
+.v23-video-load{position:absolute;left:10%;right:10%;top:15%;text-align:center;color:#e9cf99;font-size:13px;pointer-events:none;z-index:1;text-shadow:0 2px 6px #000}
+.v23-intro [hidden]{display:none!important}
+.v23-intro.video-unavailable .v23-intro-video{display:none}
+.v23-intro.video-unavailable .v23-intro-video-mask{background:linear-gradient(#070d15e8,#080e17e8)}
+@media (orientation: landscape){.v23-intro .v23-intro-stage{bottom:68px}.v23-intro .v23-narr{font-size:15px}.v23-intro .v23-line p{font-size:17px}}
+
 `;
 document.head.appendChild(css);
 render();
