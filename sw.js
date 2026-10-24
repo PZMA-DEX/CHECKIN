@@ -1,1 +1,23 @@
-const CACHE='lastcheckin-demo-v28-opening-v3-gender';const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','./index.html']).then(()=>Promise.all(ASSETS.slice(2).map(p=>c.add(p).catch(()=>{}))))).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lastcheckin-demo-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==location.origin)return; if(e.request.destination==='video'||e.request.headers.has('range')||new URL(e.request.url).pathname.endsWith('/opening_animation.mp4'))return;e.respondWith(fetch(e.request).then(r=>{if(r.ok){const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy))}return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('./index.html'))))});
+'use strict';
+const BUILD='last-screening-html-opening-v13-1-no-pause-20261024';
+const CACHE='last-screening-2042-'+BUILD;
+const CORE=['./','./index.html','./assets/game/cinema.js?v='+BUILD,'./assets/game/mobile-controls-v12.js?v='+BUILD,'./cinema.js?v='+BUILD,'./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+self.addEventListener('install',event=>event.waitUntil((async()=>{
+ const cache=await caches.open(CACHE);
+ // A missing optional poster must not prevent a complete engine update.
+ await Promise.all(CORE.map(async path=>{try{const response=await fetch(new Request(path,{cache:'reload'}));if(response.ok)await cache.put(path,response);}catch(_){} }));
+ await self.skipWaiting();
+})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{
+ for(const key of await caches.keys())if(key.startsWith('last-screening-2042-')&&key!==CACHE)await caches.delete(key);
+ await self.clients.claim();
+})()));
+self.addEventListener('fetch',event=>{
+ if(event.request.method!=='GET')return;
+ const url=new URL(event.request.url);
+ if(url.origin!==self.location.origin||event.request.headers.has('range')||/\.(mp4|webm|m4v)$/i.test(url.pathname))return;
+ event.respondWith((async()=>{
+  try{const response=await fetch(event.request);if(response.ok){const cache=await caches.open(CACHE);await cache.put(event.request,response.clone());}return response;}
+  catch(_){return await caches.match(event.request)||(event.request.mode==='navigate'?await caches.match('./index.html'):null)||Response.error();}
+ })());
+});
