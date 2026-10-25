@@ -1901,12 +1901,32 @@ function sprite(id,dir,step){
 // ───────────── 화면 ─────────────
 const view = $('view'); const ctx = view.getContext('2d');
 let DPR=1, SC=3, VW=0, VH=0;
+// v32: the camera follows the usable stage, excluding the real HUD (including
+// iOS safe-area padding) and the investigation prompt. Coordinates are pixels.
+let cameraSafe = {left:0, top:0, right:0, bottom:0};
 function resize(){
   DPR = Math.min(window.devicePixelRatio||1, 3);
   const r = view.getBoundingClientRect(); VW=r.width; VH=r.height;
+  if(!VW || !VH) return;
   view.width = Math.round(VW*DPR); view.height = Math.round(VH*DPR);
+  const hudBottom=Math.max(0, $('hud').getBoundingClientRect().bottom-r.top);
+  const margin=10, promptSpace=52;
+  cameraSafe={left:margin*DPR, top:(hudBottom+margin)*DPR,
+    right:(VW-margin)*DPR, bottom:(VH-promptSpace)*DPR};
+  // Compact landscape screens still keep a useful play area; a wrapped HUD is
+  // measured by ResizeObserver rather than relying on a fixed phone height.
+  cameraSafe.top=Math.min(cameraSafe.top, Math.max(0,view.height-48*DPR));
+  cameraSafe.bottom=Math.max(cameraSafe.top+24*DPR,cameraSafe.bottom);
   const across = VW < 520 ? 10 : 17, down = VW < 520 ? 8 : 11;
   SC = Math.max(1, Math.round(Math.min(VW/across, VH/down) * DPR / TS));
+  SC = Math.min(SC,Math.max(1,Math.floor((cameraSafe.bottom-cameraSafe.top)/26)));
+}
+function cameraOffset(target, extent, viewport, low, high, before, after){
+  let offset=Math.round((low+high)/2-target);
+  offset=extent>viewport ? Math.min(0,Math.max(viewport-extent,offset)) : Math.round((viewport-extent)/2);
+  // At map edges allow only the extra scroll needed for the entire sprite.
+  // This changes presentation only: map rows, coordinates and collisions stay put.
+  return Math.round(Math.max(low+before-target,Math.min(high-after-target,offset)));
 }
 
 
@@ -1967,6 +1987,10 @@ function render(now){
   const mw=m.W*T, mh=m.H*T;
   if (mw>view.width) ox = Math.min(0, Math.max(view.width-mw, ox)); else ox = Math.round((view.width-mw)/2);
   if (mh>view.height) oy = Math.min(0, Math.max(view.height-mh, oy)); else oy = Math.round((view.height-mh)/2);
+  if(mode!=='title'){
+    ox=cameraOffset(wx,mw,view.width,cameraSafe.left,cameraSafe.right,8*SC,8*SC);
+    oy=cameraOffset(wy,mh,view.height,cameraSafe.top,cameraSafe.bottom,13*SC,9*SC);
+  }
   { const dx0=Math.max(0,ox), dy0=Math.max(0,oy), dx1=Math.min(view.width,ox+mw), dy1=Math.min(view.height,oy+mh);
     if (dx1>dx0 && dy1>dy0) ctx.drawImage(cv, (dx0-ox)/SC*ART_SCALE,(dy0-oy)/SC*ART_SCALE,(dx1-dx0)/SC*ART_SCALE,(dy1-dy0)/SC*ART_SCALE, dx0,dy0,dx1-dx0,dy1-dy0); }
 
@@ -3168,6 +3192,120 @@ drawFurniture=function(g,ch,px,py,x,y){
 // Rugs use calmer local colours so doors, furniture and clues remain visually distinct.
 Object.assign(RUGS,{lounge:['#30483b','#3e5848','#23362e'],study:['#293846','#354657','#1e2b35'],waiting:['#293846','#354657','#1e2b35'],lobby:['#632e32','#743a3f','#472127']});
 
+/* v32 lodge materials: visual-only, baked once per floor. No layout or collision changes. */
+// Quarter-sawn oak: long staggered boards, fine grain and occasional knots.
+v24Wood=function(r,x,y){
+ for(let row=0;row<4;row++){
+  const gy=y*4+row,off=Math.floor(hash(gy,4,321)*84),yy=row*8;
+  for(let i=0;i<32;){
+   const gx=x*32+i+off,seg=Math.floor(gx/84),len=Math.min(32-i,84-gx%84);
+   const palette=['#765237','#805a3c','#725036','#896143','#7c573a'];
+   r(i,yy,len,8,palette[Math.floor(hash(seg,gy,322)*5)]);
+   if(gx%84===0){r(i,yy,1,8,'#36251b');r(i+1,yy+1,1,6,'#b08a5b55');}
+   for(let q=0;q<3;q++){
+    const at=(seg*84+Math.floor(hash(seg,gy,q+323)*66))-gx+i;
+    const start=Math.max(i,at),end=Math.min(i+len,at+13+q*5);
+    if(end>start)r(start,yy+2+q*2,end-start,.5,q%2?'#d8b27b22':'#2b1d1533');
+   }
+   if(hash(seg,gy,327)>.79){const knot=seg*84+46-gx+i;
+    if(knot>=i+2&&knot<i+len-4){r(knot-2,yy+3,7,.5,'#36251b44');r(knot,yy+4,3,1,'#38261c66');r(knot-1,yy+5,5,.5,'#c1986333');}}
+   i+=len;
+  }
+  r(0,yy,32,.5,'#d6af7844');r(0,yy+7.5,32,.5,'#241c17aa');
+ }
+};
+const v32WallBase=drawWall;
+drawWall=function(g,f,x,y,px,py){
+ v32WallBase(g,f,x,y,px,py);
+ const below=tile(f,x,y+1);
+ if(f==='B1'||below==='#'||below===' '||OUTDOOR.has(below))return;
+ artC(g,px,py,r=>{
+  // Warm mineral plaster, restrained aging, and oak panel relief.
+  for(let i=0;i<7;i++){const a=1+Math.floor(hash(x,y,i+330)*30),b=5+Math.floor(hash(y,x,i+340)*12);r(a,b,1,.5,'#fff4cf22');}
+  r(5,24,22,.5,'#be8f5838');r(5,26,22,.5,'#160e0844');r(4,23,1,5,'#99714a33');
+  if(x%4===0){r(0,4,3,15,'#694d36');r(0,4,.5,15,'#ad8658');r(2.5,4,.5,15,'#35271c');r(1,6,.5,10,'#c6a17222');}
+ });
+};
+const v32FloorBase=drawFloorChar;
+drawFloorChar=function(g,ch,px,py,x,y,room){
+ v32FloorBase(g,ch,px,py,x,y,room);
+ if((ch!=='.'&&ch!==',')||!v24Rug(x,y))return;
+ artC(g,px,py,r=>{
+  // Woven pile, subtle direction changes: keep clue glints and borders dominant.
+  const left=!v24Rug(x-1,y)?13:0,right=!v24Rug(x+1,y)?19:32;
+  const top=!v24Rug(x,y-1)?13:0,bottom=!v24Rug(x,y+1)?19:32;
+  for(let yy=top+1;yy<bottom;yy+=3)for(let xx=left+((yy+x)%3);xx<right;xx+=5)
+   r(xx,yy,1,.5,((xx+yy+y)%2)?'#dac49b19':'#101b1825');
+ });
+};
+const v32SeatBase=v30Seat;
+v30Seat=function(g,ch,px,py,x,y){
+ v32SeatBase(g,ch,px,py,x,y);
+ const dir=v30Facing(x,y),sofa=ch==='s',before=sofa&&baseAt(x-1,y)==='s';
+ artC(g,px,py,r=>{
+  // Buttoned leather, sewn piping and cushion compression with stable perspective.
+  if(dir==='down'){
+   for(const a of [10,21]){r(a,7,1,1,'#171c1980');r(a+1,8,1,.5,'#ebd8b535');}
+   for(const a of [9,20]){r(a,15,.5,6,'#ead5b426');r(a+1,20,4,.5,'#17251c44');}
+   r(6,23,20,.5,'#e3cba02e');
+  }else if(dir==='up'){
+   for(const a of [10,21]){r(a,9,.5,6,'#f0dfbb24');r(a,23,1,1,'#161e1a55');}
+  }else{
+   const a=dir==='right'?13:9;r(a,8,5,.5,'#f0dfbb35');r(a,21,5,.5,'#17251c55');
+  }
+  // Folded wool throw lives entirely on the end seat, never on the walkable floor.
+  if(sofa&&!before&&(dir==='down'||dir==='up')){
+   const yy=dir==='down'?14:7;r(5,yy,6,7,'#b5a07b');r(5,yy+1,6,1,'#d7c6a3');
+   r(7,yy,1,7,'#776b5588');r(5,yy+4,6,1,'#78674c');for(let i=0;i<3;i++)r(5+i*2,yy+7,1,1,'#d7c6a3');
+  }
+ });
+};
+const v32BedBase=v26SingleBed;
+v26SingleBed=function(g,x,y){
+ v32BedBase(g,x,y);
+ v26Piece(g,x,y,r=>{
+  // Pillow loft, linen seams and quilt folds; all remain within the existing bed.
+  r(7,7,18,1,'#fff9e5');r(8,8,1,4,'#ffffff33');r(23,9,2,4,'#9e947a44');
+  r(5,23,1,32,'#fcf1d12a');r(7,27,1,25,'#f7e8c414');r(25,24,2,33,'#17202433');
+  for(let yy=28;yy<56;yy+=9){r(5,yy,21,.5,'#f4e9cb22');r(6,yy+1,19,.5,'#151c2422');}
+  r(4,53,24,5,'#c0ad87');r(4,53,24,1,'#e3d3af');r(4,57,24,1,'#73614a');
+  for(let xx=7;xx<28;xx+=4)r(xx,54,1,3,'#77664b66');
+ });
+};
+const v32CabinetBase=v26Cabinet;
+v26Cabinet=function(g,a,b,y){
+ v32CabinetBase(g,a,b,y);
+ if(['dining','security'].includes(v26Room(a,y)))return;
+ v26Piece(g,a,y,r=>{const top=v26Wall(a,y-1)&&v26Wall(b,y-1)?-6:2,W=(b-a+1)*32;
+  r(3,top+1,W-6,.5,'#e3bc7a55');r(4,27,W-8,1,'#130d0944');
+  for(let i=0;i<=b-a;i++){r(i*32+7,top+8,.5,15,'#d4ab7230');r(i*32+24,top+9,.5,14,'#1a100d33');}
+ });
+};
+const v32ShelfBase=v26Shelf;
+v26Shelf=function(g,a,b,y){
+ v32ShelfBase(g,a,b,y);
+ v26Piece(g,a,y,r=>{const W=(b-a+1)*32,top=v26Wall(a,y-1)?-10:0;
+  r(2,top+1,W-4,.5,'#ebc88e55');r(2,top+3,1,25-top,'#b28c5b44');
+  r(W-3,top+3,1,25-top,'#100b0766');
+ });
+};
+const v32FurnBase=drawFurniture;
+drawFurniture=function(g,ch,px,py,x,y){
+ v32FurnBase(g,ch,px,py,x,y);
+ if(ch!=='F')return;
+ artC(g,px,py,r=>{
+  const center=(baseAt(x-1,y)==='F'&&baseAt(x+1,y)==='F')||(baseAt(x-1,y)!=='F'&&baseAt(x+1,y)!=='F');
+  // Cut-stone bevels flank the existing firebox; mantel retains its original extent.
+  r(1,1,30,.5,'#dfb77b55');r(0,5,32,.5,'#251a1055');
+  for(let yy=7;yy<28;yy+=6)for(let xx=0;xx<32;xx+=11){
+   if(center&&xx>1&&xx<27)continue;
+   const w=Math.min(9,32-xx);r(xx+1,yy,w,.5,'#e4dbb955');r(xx+1,yy+4,w,.5,'#27282455');
+  }
+  if(center){r(7,28,18,1,'#201b18');for(const xx of [9,14,19,23]){r(xx,25,1,5,'#25221e');r(xx,25,.5,2,'#a9794733');}}
+ });
+};
+/* end v32 lodge materials */
+
 // ───────────── 입력 ─────────────
 const KEYMAP = { ArrowUp:'up', KeyW:'up', ArrowDown:'down', KeyS:'down', ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right' };
 window.addEventListener('keydown', e=>{
@@ -3213,6 +3351,11 @@ $('btnGlint').textContent='▦ 지도';$('btnGlint').title='산장 전체 설계
 
 view.addEventListener('pointerdown', ()=>{ if(mode==='dialog') dlgTap(); });
 window.addEventListener('resize', ()=>{ if(running) resize(); });
+if(window.visualViewport) window.visualViewport.addEventListener('resize',()=>{if(running)resize();});
+if(window.ResizeObserver){
+  const cameraLayoutObserver=new ResizeObserver(()=>{if(running)resize();});
+  cameraLayoutObserver.observe($('stage'));cameraLayoutObserver.observe($('hud'));
+}
 mode='off';
 })();
 
